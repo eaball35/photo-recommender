@@ -4,6 +4,7 @@ import com.google.api.gax.paging.Page;
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.Bucket;
+import com.starterproject.petrecommender.model.Photo;
 import com.starterproject.petrecommender.repository.CloudStorageService;
 import java.util.ArrayList;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,8 +28,8 @@ public class PhotoService {
   }
 
   public BlobId getPhoto(BlobId blobId) {
-      Blob responseBlob = storageService.getObject(blobId);
-      return responseBlob.getBlobId();
+    Blob responseBlob = storageService.getObject(blobId);
+    return responseBlob.getBlobId();
   }
 
   public BlobId deletePhoto(BlobId blobId) {
@@ -36,15 +37,23 @@ public class PhotoService {
     return blobId;
   }
 
-  public ArrayList<String> getAllPhotos() {
+  public ArrayList<Photo> getAllPhotos() {
     Bucket bucket = storageService.getAllObjects();
     Page<Blob> blobs = bucket.list();
 
-    ArrayList<String> photoUrls = new ArrayList<>();
+    ArrayList<Photo> photos = new ArrayList<>();
     for (Blob blob : blobs.iterateAll()) {
+      String blobName = blob.getName();
+      String blobIdIdentifier = generateBlobIdIdentifier(blob.getBlobId());
       String url = "http://storage.googleapis.com/" + blob.getBucket() + "/" + blob.getName();
-      photoUrls.add(url);
+      Photo photo = Photo.builder().blobName(blobName).id(blobIdIdentifier).url(url).build();
+
+      photos.add(photo);
     }
-    return photoUrls;
+    return photos;
+  }
+
+  private String generateBlobIdIdentifier(BlobId blobId) {
+    return blobId.getBucket() + "/" + blobId.getName() + "/" + blobId.getGeneration();
   }
 }

@@ -1,6 +1,7 @@
 package com.starterproject.petrecommender.controller;
 
 import com.google.cloud.storage.BlobId;
+import com.starterproject.petrecommender.model.Photo;
 import com.starterproject.petrecommender.service.PhotoService;
 import java.util.ArrayList;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,7 +65,7 @@ public class PhotoController {
 
   @GetMapping()
   public ResponseEntity<Object> getAllPhotos() {
-    ArrayList<String> photos = new ArrayList<>();
+    ArrayList<Photo> photos;
     try {
       photos = photoService.getAllPhotos();
       return ResponseEntity.ok().body(photos);
