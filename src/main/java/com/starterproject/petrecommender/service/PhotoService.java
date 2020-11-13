@@ -7,6 +7,7 @@ import com.google.cloud.storage.Bucket;
 import com.starterproject.petrecommender.model.Photo;
 import com.starterproject.petrecommender.repository.CloudStorageService;
 import java.util.ArrayList;
+import java.util.Collections;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -43,13 +44,17 @@ public class PhotoService {
 
     ArrayList<Photo> photos = new ArrayList<>();
     for (Blob blob : blobs.iterateAll()) {
-      String blobName = blob.getName();
-      String blobIdIdentifier = generateBlobIdIdentifier(blob.getBlobId());
-      String url = "http://storage.googleapis.com/" + blob.getBucket() + "/" + blob.getName();
-      Photo photo = Photo.builder().blobName(blobName).id(blobIdIdentifier).url(url).build();
+      Photo photo = Photo.builder()
+          .blobName(blob.getName())
+          .bucket(blob.getBucket())
+          .generationId(blob.getGeneratedId())
+          .url("http://storage.googleapis.com/" + blob.getBucket() + "/" + blob.getName())
+          .build();
 
       photos.add(photo);
     }
+    //  randomizing return order to make front end more interesting for now
+    Collections.shuffle(photos);
     return photos;
   }
 

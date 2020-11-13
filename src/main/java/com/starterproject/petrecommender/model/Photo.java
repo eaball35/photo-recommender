@@ -10,16 +10,20 @@ public class Photo {
   @NotNull(message = "blobName cannot be null")
   private final String blobName;
 
-  @NotNull(message = "id cannot be null")
-  private final String id;
+  @NotNull(message = "bucket cannot be null")
+  private final String bucket;
+
+  @NotNull(message = "generationId cannot be null")
+  private final String generationId;
 
   @NotNull(message = "url cannot be null")
   private final String url;
 
   @Builder
-  public Photo(String blobName, String id, String url) {
+  public Photo(String blobName, String bucket, String generationId, String url) {
     this.blobName = blobName;
-    this.id = id;
+    this.bucket = bucket;
+    this.generationId = generationId;
     this.url = url;
   }
 }
