@@ -4,23 +4,39 @@ import com.google.api.gax.paging.Page;
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.Bucket;
+import com.google.cloud.storage.Storage;
+import com.google.cloud.storage.StorageOptions;
 import com.starterproject.petrecommender.model.Photo;
 import com.starterproject.petrecommender.repository.CloudStorageService;
+import java.awt.Image;
+import java.io.IOException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import javax.imageio.ImageIO;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-
-import java.io.IOException;
 
 @Service
 public class PhotoService {
 
   @Autowired private CloudStorageService storageService;
 
+  @Value("${project.id}")
+  private String projectId;
+
+  private Map<String, ArrayList> photoDimensionsCache = new HashMap<>();
+
   public BlobId addPhoto(String filePath) {
     try {
       Blob responseBlob = storageService.createObject(filePath);
+
+      // get dimensions and add to metadata
+      setMetadataDimensions(responseBlob.getBucket(), responseBlob.getName());
+
       return responseBlob.getBlobId();
     } catch (IOException e) {
       System.err.println(e);
@@ -44,12 +60,16 @@ public class PhotoService {
 
     ArrayList<Photo> photos = new ArrayList<>();
     for (Blob blob : blobs.iterateAll()) {
-      Photo photo = Photo.builder()
-          .blobName(blob.getName())
-          .bucket(blob.getBucket())
-          .generationId(blob.getGeneratedId())
-          .url("http://storage.googleapis.com/" + blob.getBucket() + "/" + blob.getName())
-          .build();
+      String url = "http://storage.googleapis.com/" + blob.getBucket() + "/" + blob.getName();
+
+      Photo photo =
+          Photo.builder()
+              .blobName(blob.getName())
+              .bucket(blob.getBucket())
+              .generationId(blob.getGeneratedId())
+              .dimensions(blob.getMetadata().get("dimensions"))
+              .url(url)
+              .build();
 
       photos.add(photo);
     }
@@ -58,7 +78,32 @@ public class PhotoService {
     return photos;
   }
 
-  private String generateBlobIdIdentifier(BlobId blobId) {
-    return blobId.getBucket() + "/" + blobId.getName() + "/" + blobId.getGeneration();
+  private void setMetadataDimensions(String bucketName, String objectName) throws IOException {
+    String url = "http://storage.googleapis.com/" + bucketName + "/" + objectName;
+
+    ArrayList dimensions = getDimensions(url);
+
+    Storage storage = StorageOptions.newBuilder().setProjectId(projectId).build().getService();
+    Map<String, String> newMetadata = new HashMap<>();
+    newMetadata.put(
+        "dimensions", dimensions.get(0).toString() + "/" + dimensions.get(1).toString());
+    Blob blob = storage.get(bucketName, objectName);
+    // Does an upsert operation, if the key already exists it's replaced by the new value, otherwise
+    // it's added.
+    blob.toBuilder().setMetadata(newMetadata).build().update();
+  }
+
+  private ArrayList getDimensions(String url) throws IOException {
+    // Create a URL for the image's location
+    URL imgUrl = new URL(url);
+
+    // Get the image
+    Image image = ImageIO.read(imgUrl);
+
+    ArrayList response = new ArrayList<>();
+    response.add(image.getHeight(null));
+    response.add(image.getWidth(null));
+
+    return response;
   }
 }

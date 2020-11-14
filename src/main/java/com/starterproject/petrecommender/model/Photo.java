@@ -1,5 +1,6 @@
 package com.starterproject.petrecommender.model;
 
+import java.util.ArrayList;
 import javax.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.Getter;
@@ -19,11 +20,15 @@ public class Photo {
   @NotNull(message = "url cannot be null")
   private final String url;
 
+  @NotNull(message = "dimensions cannot be null")
+  private final String dimensions;
+
   @Builder
-  public Photo(String blobName, String bucket, String generationId, String url) {
+  public Photo(String blobName, String bucket, String generationId, String url, String dimensions) {
     this.blobName = blobName;
     this.bucket = bucket;
     this.generationId = generationId;
     this.url = url;
+    this.dimensions = dimensions;
   }
 }
